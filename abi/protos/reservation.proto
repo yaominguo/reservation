@@ -47,13 +47,15 @@ message GetRequest { string id = 1; }
 
 message GetResponse { Reservation reservation = 1; }
 
-message QueryRequest {
+message ReservationQuery {
   string resource_id = 1;
   string user_id = 2;
   ReservationStatus status = 3;
   google.protobuf.Timestamp start = 4;
   google.protobuf.Timestamp end = 5;
 }
+
+message QueryRequest { ReservationQuery query = 1; }
 
 message ListenRequest {}
 

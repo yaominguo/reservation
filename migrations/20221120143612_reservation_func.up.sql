@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION rsvp.query(uid text, rid text, during TSTZRANGE) RETU
 AS $$
 BEGIN
   IF uid IS NULL AND rid IS NULL THEN
-    RETURN QUERY SELECT * FRom rsvp.reservations WHERE during @> timespan;
+    RETURN QUERY SELECT * FROM rsvp.reservations WHERE during @> timespan;
   ELSIF uid IS NULL THEN
     RETURN QUERY SELECT * FROM rsvp.reservations WHERE resource_id = rid AND during @> timespan;
   ELSIF ris IS NULL THEN
