@@ -16,3 +16,7 @@ sqlx = { version = "0.6.2", features = [
   "uuid",
 ] }
 thiserror = "1.0.37"
+
+[dev-dependencies]
+sqlx-database-tester = { version = "0.4.2", features = ["runtime-tokio"] }
+tokio = { version = "1.22.0", features = ["full"] }
