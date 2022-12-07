@@ -10,6 +10,7 @@ dependencies = [
  "prost",
  "prost-types",
  "sqlx",
+ "thiserror",
  "tonic",
  "tonic-build",
 ]
@@ -1187,7 +1188,6 @@ dependencies = [
  "chrono",
  "sqlx",
  "sqlx-database-tester",
- "thiserror",
  "tokio",
 ]
 
