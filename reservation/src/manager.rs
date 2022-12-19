@@ -83,4 +83,32 @@ mod tests {
         let rsvp = manager.reserve(rsvp).await.unwrap();
         assert!(!rsvp.id.is_empty());
     }
+
+    #[sqlx_database_tester::test(pool(variable = "migrated_pool", migrations = "../migrations"))]
+    async fn reserve_conflict_reservation_should_reject() {
+        let manager = ReservationManager::new(migrated_pool.clone());
+        let rsvp1 = abi::Reservation::new_pending(
+            "user_id1",
+            "resource_id",
+            "2022-12-25T12:00:00-0700".parse().unwrap(),
+            "2022-12-31T12:00:00-0700".parse().unwrap(),
+            "Test note1",
+        );
+        let rsvp2 = abi::Reservation::new_pending(
+            "user_id2",
+            "resource_id",
+            "2022-12-26T12:00:00-0700".parse().unwrap(),
+            "2022-12-30T12:00:00-0700".parse().unwrap(),
+            "Test note2",
+        );
+        let _rsvp1 = manager.reserve(rsvp1).await.unwrap();
+        let rsvp2 = manager.reserve(rsvp2).await.unwrap_err();
+        if let abi::Error::ConflictReservation(abi::ReservationConflictInfo::Parsed(info)) = rsvp2 {
+            assert_eq!(info.exist.rid, "resource_id");
+            assert_eq!(info.exist.start.to_rfc3339(), "2022-12-25T19:00:00+00:00");
+            assert_eq!(info.exist.end.to_rfc3339(), "2022-12-31T19:00:00+00:00");
+        } else {
+            panic!("expect conflict reservation error");
+        }
+    }
 }
