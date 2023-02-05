@@ -31,8 +31,12 @@ impl Rsvp for ReservationManager {
         Ok(rsvp)
     }
 
-    async fn change_status(&self, _id: ReservationId) -> Result<abi::Reservation, abi::Error> {
-        todo!()
+    async fn change_status(&self, id: ReservationId) -> Result<abi::Reservation, abi::Error> {
+        let id = Uuid::parse_str(&id).map_err(|_| abi::Error::InvalidReservationId(id.clone()))?;
+        let rsvp: abi::Reservation = sqlx::query_as(
+            "UPDATE rsvp.reservations SET status = 'confirmed' WHERE id = $1 AND status = 'pending' RETURNING *"
+        ).bind(id).fetch_one(&self.pool).await?;
+        Ok(rsvp)
     }
 
     async fn update_note(
@@ -110,5 +114,21 @@ mod tests {
         } else {
             panic!("expect conflict reservation error");
         }
+    }
+
+    #[sqlx_database_tester::test(pool(variable = "migrated_pool", migrations = "../migrations"))]
+    async fn reserve_change_status_should_work() {
+        let manager = ReservationManager::new(migrated_pool.clone());
+        let rsvp = abi::Reservation::new_pending(
+            "user_id1",
+            "resource_id",
+            "2022-12-25T12:00:00-0700".parse().unwrap(),
+            "2022-12-31T12:00:00-0700".parse().unwrap(),
+            "Test note1",
+        );
+        let rsvp = manager.reserve(rsvp).await.unwrap();
+        let rsvp = manager.change_status(rsvp.id).await.unwrap();
+
+        assert_eq!(rsvp.status, abi::ReservationStatus::Confirmed as i32)
     }
 }

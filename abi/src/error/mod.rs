@@ -12,11 +12,17 @@ pub enum Error {
     #[error("Invalid start or end time for the reservation")]
     InvalidTime,
 
+    #[error("Not found reservation")]
+    NotFound,
+
     #[error("Conflict reservation")]
     ConflictReservation(ReservationConflictInfo),
 
     #[error("Invalid user id: {0}")]
     InvalidUserId(String),
+
+    #[error("Invalid reservation id: {0}")]
+    InvalidReservationId(String),
 
     #[error("Invalid resource id: {0}")]
     InvalidResourceId(String),
@@ -38,6 +44,7 @@ impl From<sqlx::Error> for Error {
                     _ => Error::DbError(sqlx::Error::Database(db_err)),
                 }
             }
+            sqlx::Error::RowNotFound => Error::NotFound,
             _ => Error::DbError(e),
         }
     }
