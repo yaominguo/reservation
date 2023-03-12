@@ -1,8 +1,7 @@
 use std::ops::Bound;
 
-use crate::{
-    convert_to_timestamp, convert_to_utc_time, Error, Reservation, ReservationStatus, RsvpStatus,
-};
+use super::{get_timespan, validate_range};
+use crate::{convert_to_timestamp, Error, Reservation, ReservationStatus, RsvpStatus};
 use chrono::{DateTime, FixedOffset, Utc};
 use sqlx::{
     postgres::{types::PgRange, PgRow},
@@ -38,24 +37,24 @@ impl Reservation {
             return Err(Error::InvalidResourceId(self.resource_id.clone()));
         }
 
-        if self.start.is_none() || self.end.is_none() {
-            return Err(Error::InvalidTime);
-        }
+        validate_range(self.start.as_ref(), self.end.as_ref())?;
 
-        let start = convert_to_utc_time(self.start.as_ref().unwrap().clone());
-        let end = convert_to_utc_time(self.end.as_ref().unwrap().clone());
+        // if self.start.is_none() || self.end.is_none() {
+        //     return Err(Error::InvalidTime);
+        // }
 
-        if start >= end {
-            return Err(Error::InvalidTime);
-        }
+        // let start = convert_to_utc_time(self.start.as_ref().unwrap().clone());
+        // let end = convert_to_utc_time(self.end.as_ref().unwrap().clone());
+
+        // if start >= end {
+        //     return Err(Error::InvalidTime);
+        // }
 
         Ok(())
     }
 
     pub fn get_timespan(&self) -> PgRange<DateTime<Utc>> {
-        let start = convert_to_utc_time(self.start.as_ref().unwrap().clone());
-        let end = convert_to_utc_time(self.end.as_ref().unwrap().clone());
-        (start..end).into()
+        get_timespan(self.start.as_ref(), self.end.as_ref())
     }
 }
 

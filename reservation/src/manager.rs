@@ -74,9 +74,27 @@ impl Rsvp for ReservationManager {
 
     async fn query(
         &self,
-        _query: abi::ReservationQuery,
+        query: abi::ReservationQuery,
     ) -> Result<Vec<abi::Reservation>, abi::Error> {
-        todo!()
+        let user_id = str_to_option(&query.user_id);
+        let resource_id = str_to_option(&query.resource_id);
+        let range = query.get_timespan();
+        let status = abi::ReservationStatus::from_i32(query.status)
+            .unwrap_or(abi::ReservationStatus::Pending);
+        let rsvps = sqlx::query_as(
+            "SELECT * FROM rsvp.query($1, $2, $3, $4::rsvp.reservation_status, $5, $6, $7)",
+        )
+        .bind(user_id)
+        .bind(resource_id)
+        .bind(range)
+        .bind(status.to_string())
+        .bind(query.page)
+        .bind(query.page_size)
+        .bind(query.desc)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rsvps)
     }
 }
 
@@ -87,9 +105,17 @@ impl ReservationManager {
     }
 }
 
+fn str_to_option(s: &str) -> Option<&str> {
+    if s.is_empty() {
+        None
+    } else {
+        Some(s)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use abi::{Reservation, ReservationConflictInfo};
+    use abi::{Reservation, ReservationConflictInfo, ReservationQuery, ReservationStatus};
 
     use super::*;
 
@@ -174,5 +200,24 @@ mod tests {
             note,
         );
         (manager.reserve(rsvp).await.unwrap(), manager)
+    }
+
+    #[sqlx_database_tester::test(pool(variable = "migrated_pool", migrations = "../migrations"))]
+    async fn query_reservations_should_work() {
+        let (rsvp, manager) = make_reservation(migrated_pool.clone()).await;
+        let query = ReservationQuery::new(
+            "user_id1",
+            "",
+            "2022-12-01T12:00:00-0700".parse().unwrap(),
+            "2022-12-31T12:00:00-0700".parse().unwrap(),
+            ReservationStatus::Pending,
+            1,
+            10,
+            false,
+        );
+        let rsvps = manager.query(query).await.unwrap();
+
+        assert_eq!(rsvps.len(), 1);
+        assert_eq!(rsvp, rsvps[0]);
     }
 }

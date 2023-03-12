@@ -77,6 +77,12 @@ pub struct ReservationQuery {
     pub start: ::core::option::Option<::prost_types::Timestamp>,
     #[prost(message, optional, tag = "5")]
     pub end: ::core::option::Option<::prost_types::Timestamp>,
+    #[prost(int32, tag = "6")]
+    pub page: i32,
+    #[prost(int32, tag = "7")]
+    pub page_size: i32,
+    #[prost(bool, tag = "8")]
+    pub desc: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryRequest {
